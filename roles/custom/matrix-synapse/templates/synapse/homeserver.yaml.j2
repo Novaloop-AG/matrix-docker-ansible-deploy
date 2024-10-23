@@ -2181,8 +2181,8 @@ sso:
     #
     # By default, this list contains only the login fallback page.
     #
-    #client_whitelist:
-    #  - https://riot.im/develop
+    client_whitelist:
+    - https://{{ matrix_server_fqn_element }}
     #  - https://my.custom.client/
 
     # Uncomment to keep a user's profile fields in sync with information from
@@ -2194,7 +2194,7 @@ sso:
     # regardless of whether users have opted-out of syncing that
     # information when first signing in. Defaults to false.
     #
-    #update_profile_information: true
+    update_profile_information: true
 
 
 # JSON web token integration. The following settings can be used to make
