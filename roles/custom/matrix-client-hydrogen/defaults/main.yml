@@ -1,3 +1,14 @@
+# SPDX-FileCopyrightText: 2021 - 2022 Aaron Raimist
+# SPDX-FileCopyrightText: 2021 - 2022 MDAD project contributors
+# SPDX-FileCopyrightText: 2021 - 2025 Slavi Pantaleev
+# SPDX-FileCopyrightText: 2022 - 2023 Nikita Chernyi
+# SPDX-FileCopyrightText: 2022 Marko Weltzer
+# SPDX-FileCopyrightText: 2022 Matthew Cengia
+# SPDX-FileCopyrightText: 2023 Pierre 'McFly' Marty
+# SPDX-FileCopyrightText: 2023 Samuel Meenzen
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 ---
 # Project source code URL: https://github.com/element-hq/hydrogen-web
 
@@ -7,9 +18,11 @@ matrix_client_hydrogen_container_image_self_build: false
 matrix_client_hydrogen_container_image_self_build_repo: "https://github.com/element-hq/hydrogen-web.git"
 
 # renovate: datasource=docker depName=ghcr.io/element-hq/hydrogen-web
-matrix_client_hydrogen_version: v0.5.0
-matrix_client_hydrogen_docker_image: "{{ matrix_client_hydrogen_docker_image_name_prefix }}element-hq/hydrogen-web:{{ matrix_client_hydrogen_version }}"
-matrix_client_hydrogen_docker_image_name_prefix: "{{ 'localhost/' if matrix_client_hydrogen_container_image_self_build else 'ghcr.io/' }}"
+matrix_client_hydrogen_version: v0.5.1
+matrix_client_hydrogen_docker_image: "{{ matrix_client_hydrogen_docker_image_registry_prefix }}element-hq/hydrogen-web:{{ matrix_client_hydrogen_version }}"
+matrix_client_hydrogen_docker_image_registry_prefix: "{{ 'localhost/' if matrix_client_hydrogen_container_image_self_build else matrix_client_hydrogen_docker_image_registry_prefix_upstream }}"
+matrix_client_hydrogen_docker_image_registry_prefix_upstream: "{{ matrix_client_hydrogen_docker_image_registry_prefix_upstream_default }}"
+matrix_client_hydrogen_docker_image_registry_prefix_upstream_default: ghcr.io/
 matrix_client_hydrogen_docker_image_force_pull: "{{ matrix_client_hydrogen_docker_image.endswith(':latest') }}"
 
 matrix_client_hydrogen_data_path: "{{ matrix_base_data_path }}/client-hydrogen"
@@ -42,6 +55,11 @@ matrix_client_hydrogen_container_labels_traefik_priority: 0
 matrix_client_hydrogen_container_labels_traefik_entrypoints: web-secure
 matrix_client_hydrogen_container_labels_traefik_tls: "{{ matrix_client_hydrogen_container_labels_traefik_entrypoints != 'web' }}"
 matrix_client_hydrogen_container_labels_traefik_tls_certResolver: default  # noqa var-naming
+
+# Controls whether a compression middleware will be injected into the middlewares list.
+# This compression middleware is supposed to be defined elsewhere (using labels or a File provider, etc.) and is merely referenced by this router.
+matrix_client_hydrogen_container_labels_traefik_compression_middleware_enabled: false
+matrix_client_hydrogen_container_labels_traefik_compression_middleware_name: ""
 
 # Controls which additional headers to attach to all HTTP responses.
 # To add your own headers, use `matrix_client_hydrogen_container_labels_traefik_additional_response_headers_custom`

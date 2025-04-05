@@ -1,17 +1,26 @@
+# SPDX-FileCopyrightText: 2022 - 2025 Nikita Chernyi
+# SPDX-FileCopyrightText: 2022 - 2025 Slavi Pantaleev
+# SPDX-FileCopyrightText: 2022 MDAD project contributors
+# SPDX-FileCopyrightText: 2022 Marko Weltzer
+# SPDX-FileCopyrightText: 2023 Samuel Meenzen
+# SPDX-FileCopyrightText: 2024 Suguru Hirahara
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 ---
-# honoroit is a helpdesk bot
+# Honoroit is a helpdesk bot
 # Project source code URL: https://github.com/etkecc/honoroit
 
 matrix_bot_honoroit_enabled: true
 
-# The hostname at which honoroit is served.
+# The hostname at which Honoroit is served.
 matrix_bot_honoroit_hostname: ''
 
-# The path at which honoroit is exposed.
+# The path at which Honoroit is exposed.
 # This value must either be `/` or not end with a slash (e.g. `/honoroit`).
 matrix_bot_honoroit_path_prefix: /
 
-# The path at which honoroit will expose metrics
+# The path at which Honoroit will expose metrics
 # This value must either be `/` or not end with a slash (e.g. `/metrics`).
 matrix_bot_honoroit_metrics_path: /metrics
 
@@ -21,9 +30,11 @@ matrix_bot_honoroit_docker_repo_version: "{{ matrix_bot_honoroit_version }}"
 matrix_bot_honoroit_docker_src_files_path: "{{ matrix_base_data_path }}/honoroit/docker-src"
 
 # renovate: datasource=docker depName=ghcr.io/etkecc/honoroit
-matrix_bot_honoroit_version: v0.9.26
-matrix_bot_honoroit_docker_image: "{{ matrix_bot_honoroit_docker_image_name_prefix }}etkecc/honoroit:{{ matrix_bot_honoroit_version }}"
-matrix_bot_honoroit_docker_image_name_prefix: "{{ 'localhost/' if matrix_bot_honoroit_container_image_self_build else 'ghcr.io/' }}"
+matrix_bot_honoroit_version: v0.9.27
+matrix_bot_honoroit_docker_image: "{{ matrix_bot_honoroit_docker_image_registry_prefix }}etkecc/honoroit:{{ matrix_bot_honoroit_version }}"
+matrix_bot_honoroit_docker_image_registry_prefix: "{{ 'localhost/' if matrix_bot_honoroit_container_image_self_build else matrix_bot_honoroit_docker_image_registry_prefix_upstream }}"
+matrix_bot_honoroit_docker_image_registry_prefix_upstream: "{{ matrix_bot_honoroit_docker_image_registry_prefix_upstream_default }}"
+matrix_bot_honoroit_docker_image_registry_prefix_upstream_default: "ghcr.io/"
 matrix_bot_honoroit_docker_image_force_pull: "{{ matrix_bot_honoroit_docker_image.endswith(':latest') }}"
 
 matrix_bot_honoroit_base_path: "{{ matrix_base_data_path }}/honoroit"
@@ -161,12 +172,12 @@ matrix_bot_honoroit_redmine_new_status_id: ''  # new status ID (e.g. 1)
 matrix_bot_honoroit_redmine_in_progress_status_id: ''  # in progress status ID (e.g. 2)
 matrix_bot_honoroit_redmine_done_status_id: ''  # done status ID (e.g. 3)
 
-# A list of whitelisted users allowed to use/invite honoroit
+# A list of whitelisted users allowed to use/invite a Honoroit bot
 # If not defined, everyone is allowed.
 # Example set of rules:
 # matrix_bot_honoroit_allowedusers:
-# - @someone:example.com
-# - @another:example.com
+# - @alice:example.com
+# - @bob:example.com
 # - @bot.*:example.com
 # - @*:example.net
 matrix_bot_honoroit_allowedusers:
@@ -177,6 +188,9 @@ matrix_bot_honoroit_cachesize: ''
 
 # List of ignored room IDs
 matrix_bot_honoroit_ignoredrooms: []
+
+# If enabled, the bot will not send a warning message in an encrypted room
+matrix_bot_honoroit_no_encryption_warning: false
 
 # Ignore messages outside of threads
 matrix_bot_honoroit_ignorenothread: false

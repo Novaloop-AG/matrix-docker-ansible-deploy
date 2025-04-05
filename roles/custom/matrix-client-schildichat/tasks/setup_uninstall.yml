@@ -1,3 +1,8 @@
+# SPDX-FileCopyrightText: 2023 Nikita Chernyi
+# SPDX-FileCopyrightText: 2024 Suguru Hirahara
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 ---
 
 - name: Check existence of matrix-client-schildichat.service
@@ -19,7 +24,7 @@
         path: "{{ devture_systemd_docker_base_systemd_path }}/matrix-client-schildichat.service"
         state: absent
 
-    - name: Ensure SchildiChat path doesn't exist
+    - name: Ensure SchildiChat Web path doesn't exist
       ansible.builtin.file:
         path: "{{ matrix_client_schildichat_data_path }}"
         state: absent

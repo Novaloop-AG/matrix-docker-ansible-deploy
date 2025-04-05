@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2022 - 2024 Slavi Pantaleev
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 ---
 
 - name: Validate Matrix users to create
@@ -31,7 +35,7 @@
       # Suppress logging to avoid dumping the credentials to the shell
       no_log: true
 
-- when: matrix_authentication_service_enabled | bool
+- when: matrix_authentication_service_enabled and not matrix_authentication_service_migration_in_progress
   block:
     - name: Ensure Matrix Authentication Service is started before creating Matrix users
       ansible.builtin.service:
