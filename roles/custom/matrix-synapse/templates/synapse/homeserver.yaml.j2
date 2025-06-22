@@ -305,7 +305,7 @@ listeners:
         compress: false
 {% endif %}
 
-  # Unsecure HTTP listener (Client API): for when Matrix traffic passes through a reverse proxy
+  # Insecure HTTP listener (Client API): for when Matrix traffic passes through a reverse proxy
   # that unwraps TLS.
   - port: {{ matrix_synapse_container_client_api_port|to_json }}
     tls: false
@@ -318,7 +318,7 @@ listeners:
         compress: false
 
 {% if matrix_synapse_federation_port_enabled %}
-  # Unsecure HTTP listener (Federation API): for when Matrix traffic passes through a reverse proxy
+  # Insecure HTTP listener (Federation API): for when Matrix traffic passes through a reverse proxy
   # that unwraps TLS.
   - port: {{ matrix_synapse_container_federation_api_plain_port|to_json }}
     tls: false
@@ -1709,7 +1709,7 @@ old_signing_keys:
 # Additional security can be provided by configuring a `verify key`, which
 # will make synapse check that the response is signed by that key.
 #
-# This setting supercedes an older setting named `perspectives`. The old format
+# This setting supersedes an older setting named `perspectives`. The old format
 # is still supported for backwards-compatibility, but it is deprecated.
 #
 # 'trusted_key_servers' defaults to matrix.org, but using it will generate a
@@ -2136,7 +2136,7 @@ cas_config:
   # Uncomment the following to enable authorization against a CAS server.
   # Defaults to false.
   #
-  #enabled: true
+  enabled: {{ matrix_synapse_cas_config_enabled | to_json }}
 
   # The URL of the CAS authorization endpoint.
   #
