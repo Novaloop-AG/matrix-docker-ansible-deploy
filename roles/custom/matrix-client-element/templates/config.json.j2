@@ -3,9 +3,6 @@
 		"m.homeserver": {
 			"base_url": {{ matrix_client_element_default_hs_url | string | to_json }},
 			"server_name": {{ matrix_client_element_default_server_name | string | to_json }}
-		},
-		"m.identity_server": {
-			"base_url": {{ matrix_client_element_default_is_url | string | to_json }}
 		}
 	},
 	"sso_redirect_options": {
