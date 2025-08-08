@@ -113,6 +113,7 @@
     - galaxy/sable
     - custom/matrix-client-schildichat
     - custom/matrix-client-fluffychat
+    - custom/healthchat-workspace
     - galaxy/jitsi
     - custom/matrix-user-verification-service
     - galaxy/etherpad

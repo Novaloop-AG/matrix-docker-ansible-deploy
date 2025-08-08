@@ -1,0 +1,50 @@
+{% if healthchat_workspace_container_labels_traefik_enabled %}
+traefik.enable=true
+
+{% if healthchat_workspace_container_labels_traefik_docker_network %}
+traefik.docker.network={{ healthchat_workspace_container_labels_traefik_docker_network }}
+{% endif %}
+
+traefik.http.services.healthchat-workspace.loadbalancer.server.port={{ healthchat_workspace_container_http_port }}
+
+{% set middlewares = [] %}
+
+{% if healthchat_workspace_container_labels_traefik_compression_middleware_enabled %}
+{% set middlewares = middlewares + [healthchat_workspace_container_labels_traefik_compression_middleware_name] %}
+{% endif %}
+
+{% if healthchat_workspace_container_labels_traefik_path_prefix != '/' %}
+traefik.http.middlewares.healthchat-workspace-slashless-redirect.redirectregex.regex=({{ healthchat_workspace_container_labels_traefik_path_prefix | quote }})$
+traefik.http.middlewares.healthchat-workspace-slashless-redirect.redirectregex.replacement=${1}/
+{% set middlewares = middlewares + ['healthchat-workspace-slashless-redirect'] %}
+{% endif %}
+
+{% if healthchat_workspace_container_labels_traefik_path_prefix != '/' %}
+traefik.http.middlewares.healthchat-workspace-strip-prefix.stripprefix.prefixes={{ healthchat_workspace_container_labels_traefik_path_prefix }}
+{% set middlewares = middlewares + ['healthchat-workspace-strip-prefix'] %}
+{% endif %}
+
+{% if healthchat_workspace_container_labels_traefik_additional_response_headers.keys() | length > 0 %}
+{% for name, value in healthchat_workspace_container_labels_traefik_additional_response_headers.items() %}
+traefik.http.middlewares.healthchat-workspace-add-headers.headers.customresponseheaders.{{ name }}={{ value }}
+{% endfor %}
+{% set middlewares = middlewares + ['healthchat-workspace-add-headers'] %}
+{% endif %}
+
+traefik.http.routers.healthchat-workspace.rule={{ healthchat_workspace_container_labels_traefik_rule }}
+{% if healthchat_workspace_container_labels_traefik_priority | int > 0 %}
+traefik.http.routers.healthchat-workspace.priority={{ healthchat_workspace_container_labels_traefik_priority }}
+{% endif %}
+traefik.http.routers.healthchat-workspace.service=healthchat-workspace
+{% if middlewares | length > 0 %}
+traefik.http.routers.healthchat-workspace.middlewares={{ middlewares | join(',') }}
+{% endif %}
+traefik.http.routers.healthchat-workspace.entrypoints={{ healthchat_workspace_container_labels_traefik_entrypoints }}
+traefik.http.routers.healthchat-workspace.tls={{ healthchat_workspace_container_labels_traefik_tls | to_json }}
+{% if healthchat_workspace_container_labels_traefik_tls %}
+traefik.http.routers.healthchat-workspace.tls.certResolver={{ healthchat_workspace_container_labels_traefik_tls_certResolver }}
+{% endif %}
+
+{% endif %}
+
+{{ healthchat_workspace_container_labels_additional_labels }}
