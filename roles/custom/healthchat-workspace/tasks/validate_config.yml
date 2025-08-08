@@ -1,0 +1,24 @@
+---
+
+- name: Fail if required healthchat-workspace settings not defined
+  ansible.builtin.fail:
+    msg: >
+      You need to define a required configuration setting (`{{ item }}`) for using healthchat-workspace.
+  when: "vars[item] == ''"
+  with_items:
+    - healthchat_workspace_hostname
+    - healthchat_workspace_container_network
+
+- name: Fail if Docker registry authentication is enabled but credentials are missing
+  ansible.builtin.fail:
+    msg: >
+      Docker registry authentication is enabled (healthchat_workspace_docker_registry_enabled=true)
+      but required credentials are missing. Please set both healthchat_workspace_docker_registry_username
+      and healthchat_workspace_docker_registry_password. For ghcr.io, use your GitHub username and a
+      Personal Access Token with packages:read scope.
+  when: >
+    healthchat_workspace_docker_registry_enabled | bool and
+    (healthchat_workspace_docker_registry_username == '' or
+     healthchat_workspace_docker_registry_password == '')
+
+

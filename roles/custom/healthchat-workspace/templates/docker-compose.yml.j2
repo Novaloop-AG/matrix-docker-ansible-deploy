@@ -1,0 +1,25 @@
+---
+services:
+  healthchat-app:
+    image: {{ healthchat_workspace_docker_image }}
+    ports:
+      - "{{ healthchat_workspace_container_http_port }}:{{ healthchat_workspace_container_http_port }}"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:{{ healthchat_workspace_container_http_port }}
+      - DATASETTINGS__DATADIRECTORY=/app/data
+    volumes:
+{% for volume in healthchat_workspace_container_volumes %}
+      - "{{ volume }}"
+{% endfor %}
+{% if healthchat_workspace_container_network %}
+    networks:
+      - {{ healthchat_workspace_container_network }}
+{% endif %}
+    restart: unless-stopped
+
+{% if healthchat_workspace_container_network %}
+networks:
+  {{ healthchat_workspace_container_network }}:
+    external: true
+{% endif %}
