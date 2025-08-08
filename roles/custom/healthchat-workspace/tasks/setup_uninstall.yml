@@ -1,0 +1,25 @@
+---
+
+- name: Check existence of healthchat-workspace service
+  ansible.builtin.stat:
+    path: "{{ devture_systemd_docker_base_systemd_path }}/healthchat-workspace.service"
+  register: healthchat_workspace_service_stat
+
+- when: healthchat_workspace_service_stat.stat.exists | bool
+  block:
+    - name: Ensure healthchat-workspace is stopped
+      ansible.builtin.service:
+        name: healthchat-workspace
+        state: stopped
+        enabled: false
+        daemon_reload: true
+
+    - name: Ensure healthchat-workspace.service doesn't exist
+      ansible.builtin.file:
+        path: "{{ devture_systemd_docker_base_systemd_path }}/healthchat-workspace.service"
+        state: absent
+
+    - name: Ensure healthchat-workspace path doesn't exist
+      ansible.builtin.file:
+        path: "{{ healthchat_workspace_base_path }}"
+        state: absent

@@ -1,0 +1,107 @@
+---
+# healthchat-workspace is a custom Docker application deployment role
+# Project source code URL: https://github.com/Novaloop-AG/healthchat-workspace
+
+healthchat_workspace_enabled: false
+
+# Docker image configuration
+healthchat_workspace_docker_image: "ghcr.io/novaloop-ag/healthchat-workspace:latest"
+healthchat_workspace_docker_image_force_pull: "{{ healthchat_workspace_docker_image.endswith(':latest') }}"
+
+# Docker registry authentication
+# Set to true to enable Docker registry authentication for private repositories
+healthchat_workspace_docker_registry_enabled: false
+healthchat_workspace_docker_registry_url: "ghcr.io"
+# For ghcr.io, use your GitHub username and a Personal Access Token with packages:read scope
+healthchat_workspace_docker_registry_username: ""
+healthchat_workspace_docker_registry_password: ""
+
+
+# Paths
+healthchat_workspace_base_path: "{{ matrix_base_data_path }}/healthchat-workspace"
+healthchat_workspace_data_path: "{{ healthchat_workspace_base_path }}/data"
+healthchat_workspace_compose_path: "{{ healthchat_workspace_base_path }}/compose"
+
+# Network configuration
+healthchat_workspace_container_network: 'healthchat-workspace'
+
+
+# Port configuration
+healthchat_workspace_container_http_port: 8080
+# Controls whether the container exposes its HTTP port
+# Takes an "<ip>:<port>" or "<port>" value (e.g. "127.0.0.1:8080"), or empty string to not expose
+healthchat_workspace_container_http_host_bind_port: ''
+
+# Hostname and domain configuration
+healthchat_workspace_hostname: "{{ healthchat_workspace_identifier }}.{{ matrix_domain }}"
+healthchat_workspace_identifier: workspace
+healthchat_workspace_path_prefix: /
+
+# Environment variables for the container
+healthchat_workspace_environment_variables: {}
+# Example:
+# healthchat_workspace_environment_variables:
+#   ZITADEL__PERSONALACCESSTOKEN: "your_personal_access_token_here"
+#   EMAILSETTINGS__SMTPPASSWORD: "your_smtp_password_here"
+#   MATRIX__SHAREDSECRET: "your_shared_secret_here"
+
+# Additional environment variables (raw string format)
+healthchat_workspace_environment_variables_extension: ""
+
+# Volume mounts
+healthchat_workspace_container_volumes:
+  - "{{ healthchat_workspace_data_path }}:/app/data"
+
+# Additional Docker arguments
+healthchat_workspace_container_extra_arguments: []
+
+# Traefik configuration
+healthchat_workspace_container_labels_traefik_enabled: true
+healthchat_workspace_container_labels_traefik_docker_network: "{{ healthchat_workspace_container_network }}"
+healthchat_workspace_container_labels_traefik_hostname: "{{ healthchat_workspace_hostname }}"
+healthchat_workspace_container_labels_traefik_path_prefix: "{{ healthchat_workspace_path_prefix }}"
+healthchat_workspace_container_labels_traefik_rule: "Host(`{{ healthchat_workspace_container_labels_traefik_hostname }}`){% if healthchat_workspace_container_labels_traefik_path_prefix != '/' %} && PathPrefix(`{{ healthchat_workspace_container_labels_traefik_path_prefix }}`){% endif %}"
+healthchat_workspace_container_labels_traefik_priority: 0
+healthchat_workspace_container_labels_traefik_entrypoints: web-secure
+healthchat_workspace_container_labels_traefik_tls: "{{ healthchat_workspace_container_labels_traefik_entrypoints != 'web' }}"
+healthchat_workspace_container_labels_traefik_tls_certResolver: default
+
+# Compression middleware
+healthchat_workspace_container_labels_traefik_compression_middleware_enabled: false
+healthchat_workspace_container_labels_traefik_compression_middleware_name: ""
+
+# HTTP headers configuration
+healthchat_workspace_http_header_xss_protection: "1; mode=block"
+healthchat_workspace_http_header_frame_options: SAMEORIGIN
+healthchat_workspace_http_header_content_type_options: nosniff
+healthchat_workspace_http_header_content_security_policy: ""
+healthchat_workspace_http_header_content_permission_policy: "interest-cohort=()"
+healthchat_workspace_http_header_strict_transport_security: "max-age=31536000; includeSubDomains{{ '; preload' if healthchat_workspace_hsts_preload_enabled else '' }}"
+healthchat_workspace_hsts_preload_enabled: false
+
+# Additional response headers
+healthchat_workspace_container_labels_traefik_additional_response_headers: "{{ healthchat_workspace_container_labels_traefik_additional_response_headers_auto | combine(healthchat_workspace_container_labels_traefik_additional_response_headers_custom) }}"
+healthchat_workspace_container_labels_traefik_additional_response_headers_auto: |
+  {{
+    {}
+    | combine ({'X-XSS-Protection': healthchat_workspace_http_header_xss_protection} if healthchat_workspace_http_header_xss_protection else {})
+    | combine ({'X-Frame-Options': healthchat_workspace_http_header_frame_options} if healthchat_workspace_http_header_frame_options else {})
+    | combine ({'X-Content-Type-Options': healthchat_workspace_http_header_content_type_options} if healthchat_workspace_http_header_content_type_options else {})
+    | combine ({'Content-Security-Policy': healthchat_workspace_http_header_content_security_policy} if healthchat_workspace_http_header_content_security_policy else {})
+    | combine ({'Permission-Policy': healthchat_workspace_http_header_content_permission_policy} if healthchat_workspace_http_header_content_permission_policy else {})
+    | combine ({'Strict-Transport-Security': healthchat_workspace_http_header_strict_transport_security} if healthchat_workspace_http_header_strict_transport_security and healthchat_workspace_container_labels_traefik_tls else {})
+  }}
+healthchat_workspace_container_labels_traefik_additional_response_headers_custom: {}
+
+# Additional container labels
+healthchat_workspace_container_labels_additional_labels: ""
+
+# Systemd service configuration
+healthchat_workspace_systemd_required_services_list: "{{ healthchat_workspace_systemd_required_services_list_default + healthchat_workspace_systemd_required_services_list_auto + healthchat_workspace_systemd_required_services_list_custom }}"
+healthchat_workspace_systemd_required_services_list_default: "{{ [devture_systemd_docker_base_docker_service_name] if devture_systemd_docker_base_docker_service_name else [] }}"
+healthchat_workspace_systemd_required_services_list_auto: []
+healthchat_workspace_systemd_required_services_list_custom: []
+
+# User and group configuration
+healthchat_workspace_uid: "{{ matrix_user_uid }}"
+healthchat_workspace_gid: "{{ matrix_user_gid }}"
