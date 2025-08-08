@@ -1,0 +1,26 @@
+---
+
+- tags:
+    - setup-all
+    - setup-healthchat-workspace
+    - install-all
+    - install-healthchat-workspace
+  block:
+    - when: healthchat_workspace_enabled | bool
+      ansible.builtin.include_tasks: "{{ role_path }}/tasks/validate_config.yml"
+
+- tags:
+    - setup-all
+    - setup-healthchat-workspace
+    - install-all
+    - install-healthchat-workspace
+  block:
+    - when: healthchat_workspace_enabled | bool
+      ansible.builtin.include_tasks: "{{ role_path }}/tasks/setup_install.yml"
+
+- tags:
+    - setup-all
+    - setup-healthchat-workspace
+  block:
+    - when: not healthchat_workspace_enabled | bool
+      ansible.builtin.include_tasks: "{{ role_path }}/tasks/setup_uninstall.yml"

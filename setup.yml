@@ -120,6 +120,7 @@
     - custom/matrix-client-cinny
     - custom/matrix-client-schildichat
     - custom/matrix-client-fluffychat
+    - custom/healthchat-workspace
     - galaxy/jitsi
     - custom/matrix-user-verification-service
     - custom/matrix-ldap-registration-proxy

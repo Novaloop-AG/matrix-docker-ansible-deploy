@@ -1,0 +1,59 @@
+---
+
+- name: Ensure healthchat-workspace paths exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: 0750
+    owner: "{{ matrix_user_name }}"
+    group: "{{ matrix_group_name }}"
+  loop:
+    - "{{ healthchat_workspace_base_path }}"
+    - "{{ healthchat_workspace_data_path }}"
+    - "{{ healthchat_workspace_compose_path }}"
+
+- name: Log into Docker registry for healthchat-workspace
+  community.docker.docker_login:
+    registry: "{{ healthchat_workspace_docker_registry_url }}"
+    username: "{{ healthchat_workspace_docker_registry_username }}"
+    password: "{{ healthchat_workspace_docker_registry_password }}"
+    reauthorize: true
+  when: healthchat_workspace_docker_registry_enabled | bool
+  no_log: true
+
+- name: Ensure healthchat-workspace Docker Compose file installed
+  ansible.builtin.copy:
+    content: "{{ healthchat_workspace_docker_compose_file_content }}"
+    dest: "{{ healthchat_workspace_compose_path }}/docker-compose.yml"
+    mode: 0644
+    owner: "{{ matrix_user_name }}"
+    group: "{{ matrix_group_name }}"
+
+- name: Ensure healthchat-workspace environment file installed
+  ansible.builtin.template:
+    src: "{{ role_path }}/templates/env.j2"
+    dest: "{{ healthchat_workspace_base_path }}/env"
+    mode: 0644
+    owner: "{{ matrix_user_name }}"
+    group: "{{ matrix_group_name }}"
+
+- name: Ensure healthchat-workspace labels file installed
+  ansible.builtin.template:
+    src: "{{ role_path }}/templates/labels.j2"
+    dest: "{{ healthchat_workspace_base_path }}/labels"
+    mode: 0644
+    owner: "{{ matrix_user_name }}"
+    group: "{{ matrix_group_name }}"
+
+- name: Ensure healthchat-workspace container network is created
+  community.general.docker_network:
+    enable_ipv6: "{{ devture_systemd_docker_base_ipv6_enabled }}"
+    name: "{{ healthchat_workspace_container_network }}"
+    driver: bridge
+    driver_options: "{{ devture_systemd_docker_base_container_networks_driver_options }}"
+
+- name: Ensure healthchat-workspace.service installed
+  ansible.builtin.template:
+    src: "{{ role_path }}/templates/systemd/healthchat-workspace.service.j2"
+    dest: "{{ devture_systemd_docker_base_systemd_path }}/healthchat-workspace.service"
+    mode: 0644
