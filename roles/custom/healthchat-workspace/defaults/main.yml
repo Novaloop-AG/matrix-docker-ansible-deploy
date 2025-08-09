@@ -57,7 +57,7 @@ healthchat_workspace_container_extra_arguments: []
 
 # Traefik configuration
 healthchat_workspace_container_labels_traefik_enabled: true
-healthchat_workspace_container_labels_traefik_docker_network: "{{ healthchat_workspace_container_network }}"
+healthchat_workspace_container_labels_traefik_docker_network: "traefik"
 healthchat_workspace_container_labels_traefik_hostname: "{{ healthchat_workspace_hostname }}"
 healthchat_workspace_container_labels_traefik_path_prefix: "{{ healthchat_workspace_path_prefix }}"
 healthchat_workspace_container_labels_traefik_rule: "Host(`{{ healthchat_workspace_container_labels_traefik_hostname }}`){% if healthchat_workspace_container_labels_traefik_path_prefix != '/' %} && PathPrefix(`{{ healthchat_workspace_container_labels_traefik_path_prefix }}`){% endif %}"
@@ -72,7 +72,7 @@ healthchat_workspace_container_labels_traefik_compression_middleware_name: ""
 
 # HTTP headers configuration
 healthchat_workspace_http_header_xss_protection: "1; mode=block"
-healthchat_workspace_http_header_frame_options: SAMEORIGIN
+healthchat_workspace_http_header_frame_options: ALLOWALL # To be embedded in matrix clients
 healthchat_workspace_http_header_content_type_options: nosniff
 healthchat_workspace_http_header_content_security_policy: ""
 healthchat_workspace_http_header_content_permission_policy: "interest-cohort=()"
