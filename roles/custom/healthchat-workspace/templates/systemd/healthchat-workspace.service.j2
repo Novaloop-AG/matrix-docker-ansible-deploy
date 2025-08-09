@@ -15,7 +15,6 @@ ExecStartPre=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_s
 
 ExecStart={{ devture_systemd_docker_base_host_command_docker }} compose \
 			-f {{ healthchat_workspace_compose_path }}/docker-compose.yml \
-			--env-file {{ healthchat_workspace_base_path }}/env \
 			up --force-recreate --remove-orphans
 
 ExecStop=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} compose -f {{ healthchat_workspace_compose_path }}/docker-compose.yml down --remove-orphans 2>/dev/null || true'

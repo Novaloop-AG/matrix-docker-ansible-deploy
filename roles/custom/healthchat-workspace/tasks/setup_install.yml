@@ -28,6 +28,7 @@
     mode: 0644
     owner: "{{ matrix_user_name }}"
     group: "{{ matrix_group_name }}"
+  register: healthchat_workspace_docker_compose_result
 
 - name: Ensure healthchat-workspace environment file installed
   ansible.builtin.template:
@@ -57,3 +58,10 @@
     src: "{{ role_path }}/templates/systemd/healthchat-workspace.service.j2"
     dest: "{{ devture_systemd_docker_base_systemd_path }}/healthchat-workspace.service"
     mode: 0644
+
+- name: Ensure healthchat-workspace.service is restarted if compose file changed
+  ansible.builtin.service:
+    name: healthchat-workspace.service
+    state: restarted
+    daemon_reload: true
+  when: healthchat_workspace_docker_compose_result.changed
