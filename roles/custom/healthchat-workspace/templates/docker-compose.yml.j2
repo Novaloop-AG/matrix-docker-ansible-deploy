@@ -1,13 +1,14 @@
 ---
 services:
-  healthchat-app:
+  healthchat-workspace:
+    container_name: healthchat-workspace
     image: {{ healthchat_workspace_docker_image }}
-    ports:
-      - "{{ healthchat_workspace_container_http_port }}:{{ healthchat_workspace_container_http_port }}"
+    env_file: "{{ healthchat_workspace_base_path }}/env"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:{{ healthchat_workspace_container_http_port }}
       - DATASETTINGS__DATADIRECTORY=/app/data
+    label_file: "{{ healthchat_workspace_base_path }}/labels"
     volumes:
 {% for volume in healthchat_workspace_container_volumes %}
       - "{{ volume }}"
@@ -15,11 +16,14 @@ services:
 {% if healthchat_workspace_container_network %}
     networks:
       - {{ healthchat_workspace_container_network }}
+      - traefik
 {% endif %}
     restart: unless-stopped
 
 {% if healthchat_workspace_container_network %}
 networks:
   {{ healthchat_workspace_container_network }}:
+    external: true
+  traefik:
     external: true
 {% endif %}
