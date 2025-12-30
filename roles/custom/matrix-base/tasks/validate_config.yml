@@ -31,6 +31,8 @@
     - {'old': 'matrix_client_element_e2ee_default', 'new': 'matrix_static_files_file_matrix_client_property_io_element_e2ee_default'}
     - {'old': 'matrix_client_element_e2ee_secure_backup_required', 'new': 'matrix_static_files_file_matrix_client_property_io_element_e2ee_secure_backup_required'}
     - {'old': 'matrix_client_element_e2ee_secure_backup_setup_methods', 'new': 'matrix_static_files_file_matrix_client_property_io_element_e2ee_secure_backup_setup_methods'}
+    - {'old': 'matrix_static_files_file_matrix_client_property_io_element_e2ee_secure_backup_required', 'new': '<removed; see https://github.com/element-hq/element-web/pull/30702 and https://github.com/element-hq/element-web/pull/30681>'}
+    - {'old': 'matrix_static_files_file_matrix_client_property_io_element_e2ee_secure_backup_setup_methods', 'new': '<removed; see https://github.com/element-hq/element-web/pull/30702 and https://github.com/element-hq/element-web/pull/30681>'}
     - {'old': 'matrix_container_global_registry_prefix', 'new': '<no global variable anymore; you need to override the `_registry_prefix` variable in each component separately>'}
     - {'old': 'matrix_user_username', 'new': 'matrix_user_name'}
     - {'old': 'matrix_user_groupname', 'new': 'matrix_group_name'}
@@ -98,15 +100,3 @@
       To clean up your server from mx-puppet-skype's presence, see this changelog entry: https://github.com/spantaleev/matrix-docker-ansible-deploy/blob/master/CHANGELOG.md#mx-puppet-skype-removal.
       If you still need bridging to Skype, consider switching to the go-skype bridge instead. See `docs/configuring-playbook-bridge-go-skype-bridge.md`.
   when: "lookup('ansible.builtin.varnames', '^matrix_mx_puppet_skype_enabled$', wantlist=True) | length > 0"
-
-- name: Fail if mautrix-instagram and mautrix-meta-instagram are in conflict
-  ansible.builtin.fail:
-    msg: >-
-      Your configuration enables both the old mautrix-instagram bridge and the new mautrix-meta-instagram bridge.
-      By default, both bridges are configured to use the same bridge bot username (`@{{ matrix_mautrix_meta_instagram_appservice_username }}:{{ matrix_domain }}`) which is a conflict.
-      We recommend that you disable at least one of the bridges (preferably the old mautrix-instagram bridge), or to resolve the conflict in another way.
-      To resolve the conflict without disabling a bridge, consider adjusting one of `matrix_mautrix_instagram_appservice_bot_username` or `matrix_mautrix_meta_instagram_appservice_username` - they both have a value of {{ matrix_mautrix_meta_instagram_appservice_username }} right now.
-  when:
-    - matrix_mautrix_instagram_enabled | bool
-    - matrix_mautrix_meta_instagram_enabled | bool
-    - matrix_mautrix_instagram_appservice_bot_username == matrix_mautrix_meta_instagram_appservice_username
