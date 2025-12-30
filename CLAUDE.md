@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-This is the matrix-docker-ansible-deploy project - an Ansible playbook for deploying a Matrix homeserver and various Matrix-related services using Docker containers. The playbook automates the setup and maintenance of Matrix infrastructure.
+This is the matrix-docker-ansible-deploy project - an Ansible playbook for deploying a Matrix homeserver and related services using Docker containers. The playbook automates setup and maintenance of Matrix infrastructure including homeservers (Synapse/Dendrite/Conduit variants), bridges, bots, clients, and supporting services.
 
 ## Common Development Commands
 
@@ -14,29 +14,34 @@ This is the matrix-docker-ansible-deploy project - an Ansible playbook for deplo
 # Update playbook and install/update Ansible roles
 just update
 
-# Install all roles (without updating playbook)
+# Install roles only (without updating playbook)
 just roles
 
-# Run a full installation
+# Run a full installation (install + create users + start)
 just install-all
 
 # Setup services without starting them
 just setup-all
 ```
 
-### Service Management
+### Running the Playbook
 
 ```bash
-# Start all services
-just start-all
+# Run playbook with specific tags
+just run-tags <comma-separated-tags>
 
-# Stop all services
-just stop-all
+# Run playbook with custom arguments
+just run <extra-args>
 
 # Install a specific service
 just install-service <service-name>
+```
 
-# Start/stop a specific service group
+### Service Management
+
+```bash
+just start-all
+just stop-all
 just start-group <group-name>
 just stop-group <group-name>
 ```
@@ -44,74 +49,76 @@ just stop-group <group-name>
 ### User Management
 
 ```bash
-# Register a new user (admin_yes_or_no should be 'yes' or 'no')
+# Register a new user (admin_yes_or_no: 'yes' or 'no')
 just register-user <username> <password> <admin_yes_or_no>
 ```
 
-### Development and Testing
+### Development
 
 ```bash
 # Run ansible-lint against custom roles
 just lint
 # or
 make lint
-
-# Run playbook with specific tags
-just run-tags <comma-separated-tags>
-
-# Run playbook with custom arguments
-just run <extra-args>
 ```
+
+## Key Playbook Tags
+
+- `setup-all` — Runs all setup tasks (install + uninstall) but doesn't start services
+- `install-all` — Like `setup-all` but skips uninstallation tasks
+- `setup-SERVICE` / `install-SERVICE` — Per-service setup (e.g., `setup-synapse`, `install-mautrix-telegram`)
+- `start` / `stop` — Start/stop all services
+- `ensure-matrix-users-created` — Creates special users needed by bots/bridges
+
+**Note:** `just install-all` differs from raw `--tags=install-all` because just recipes also run `ensure-matrix-users-created` and `start` automatically.
 
 ## High-Level Architecture
 
 ### Project Structure
 
-- **Ansible Playbook Core**: The main `setup.yml` orchestrates the deployment
-- **Roles Organization**:
-  - `roles/custom/` - Matrix-specific roles maintained by this project
-  - `roles/galaxy/` - External roles fetched via ansible-galaxy (gitignored)
-- **Configuration**:
-  - `inventory/hosts` - Defines target servers
-  - `inventory/host_vars/<domain>/vars.yml` - Server-specific configuration
-- **Documentation**: Comprehensive guides in `docs/` directory
+- `setup.yml` — Main playbook orchestrating all role execution
+- `roles/custom/` — Matrix-specific roles maintained by this project (~80 roles for services, bridges, bots)
+- `roles/galaxy/` — External roles fetched via ansible-galaxy (gitignored)
+- `group_vars/matrix_servers` — Central wiring file connecting all roles with variable overrides
+- `inventory/hosts` — Target server definitions
+- `inventory/host_vars/<domain>/vars.yml` — Per-server configuration
 
-### Service Categories
+### Role Structure
 
-1. **Core Services**:
-   - Matrix homeserver (Synapse/Conduit/Dendrite)
-   - PostgreSQL database
-   - Reverse proxy (Traefik/nginx)
-   - SSL certificates (Let's Encrypt)
+Each role in `roles/custom/` follows this pattern:
+- `defaults/main.yml` — Default variables (service disabled by default)
+- `tasks/main.yml` — Tagged task blocks for setup/install/start/stop operations
+- `templates/` — Jinja2 templates for configs and systemd units
+- `vars/` — Internal variables
 
-2. **Bridges**: Connect Matrix to external services (Discord, Telegram, WhatsApp, etc.)
+### Variable Naming Convention
 
-3. **Bots**: Automation and moderation tools (Mjolnir, Draupnir, maubot)
+- `matrix_<service>_enabled: true/false` — Enable/disable a service
+- `matrix_<service>_*` — Service-specific configuration
+- `matrix_domain` — Base domain for Matrix identity (e.g., `example.com`)
+- `matrix_server_fqn_matrix` — FQDN where services run (defaults to `matrix.{{ matrix_domain }}`)
+- `matrix_homeserver_implementation` — Homeserver choice: `synapse`, `dendrite`, `conduit`, `conduwuit`, `continuwuity`
 
-4. **Clients**: Web-based Matrix clients (Element, Hydrogen, Cinny)
+### Configuration Flow
 
-5. **Supporting Services**: Authentication, backups, monitoring, administration tools
+1. User defines `inventory/host_vars/<domain>/vars.yml` with their settings
+2. `group_vars/matrix_servers` wires together all roles and sets interdependencies
+3. Each role's defaults are overridden by group_vars and then host_vars
+4. Services are enabled explicitly via `matrix_<service>_enabled: true`
 
-### Deployment Flow
+### Deployment Architecture
 
-1. Ansible connects to target server(s) via SSH
-2. Playbook ensures Docker and dependencies are installed
-3. Each service runs in its own Docker container
-4. Traefik handles reverse proxying and SSL termination
-5. Services communicate via Docker networks
-6. Data persists in Docker volumes
+- All services run in Docker containers with systemd unit files
+- Traefik handles reverse proxying and SSL termination (Let's Encrypt)
+- Services communicate via Docker networks
+- Data persists in Docker volumes under `/matrix/`
+- Bridge/bot registrations are automatically mounted into homeserver containers
 
-### Key Design Principles
+### Key Dependencies
 
-- **Container-based**: All services run in Docker containers for isolation and portability
-- **Modular**: Services can be enabled/disabled via configuration variables
-- **Idempotent**: Playbook can be run multiple times safely
-- **Configurable**: Extensive customization through Ansible variables
-- **Maintainable**: Regular updates via container image updates
-
-## Configuration Approach
-
-- Each service has a corresponding role in `roles/custom/matrix-*`
-- Services are configured via `matrix_*` variables in `vars.yml`
-- Most services default to disabled and must be explicitly enabled
-- Service interdependencies are handled automatically by the playbook
+External roles from `requirements.yml` provide:
+- Docker installation (geerlingguy/ansible-role-docker)
+- PostgreSQL (mother-of-all-self-hosting/ansible-role-postgres)
+- Traefik reverse proxy
+- systemd service management
+- Various supporting services (Grafana, Prometheus, Valkey, etc.)
