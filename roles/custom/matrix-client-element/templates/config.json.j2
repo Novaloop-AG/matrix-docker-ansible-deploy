@@ -58,5 +58,10 @@
 		"welcome_background_url": {{ matrix_client_element_branding_welcome_background_url | to_json }}
 	},
 	"features": {{ matrix_client_element_features | to_json }},
-	"element_call": {{ (matrix_client_element_element_call if matrix_client_element_element_call_enabled else {}) | to_json }}
+	"element_call": {{ (matrix_client_element_element_call if matrix_client_element_element_call_enabled else {}) | to_json }},
+	"modules": ["/modules/healthchat-module.js"],
+	"ch.healthchat": {
+		"api_base_url": "https://api.healthchat.ch",
+		"elements_base_url": "/modules/elements"
+	}
 }
