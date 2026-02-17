@@ -4,121 +4,111 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-This is the matrix-docker-ansible-deploy project - an Ansible playbook for deploying a Matrix homeserver and related services using Docker containers. The playbook automates setup and maintenance of Matrix infrastructure including homeservers (Synapse/Dendrite/Conduit variants), bridges, bots, clients, and supporting services.
+This is a fork/customization of [matrix-docker-ansible-deploy](https://github.com/spantaleev/matrix-docker-ansible-deploy) — an Ansible playbook for deploying a Matrix homeserver and related services using Docker containers. It deploys to `matrix.healthchat.ch` and includes a custom `healthchat-workspace` role.
 
 ## Common Development Commands
 
-### Installation and Updates
-
 ```bash
-# Update playbook and install/update Ansible roles
+# Lint custom roles
+just lint                    # or: make lint
+
+# Update playbook + install/update Ansible roles
 just update
 
-# Install roles only (without updating playbook)
+# Install roles only (without git pull)
 just roles
 
-# Run a full installation (install + create users + start)
+# Run full installation (install + create users + start)
 just install-all
 
 # Setup services without starting them
 just setup-all
-```
 
-### Running the Playbook
-
-```bash
 # Run playbook with specific tags
 just run-tags <comma-separated-tags>
 
-# Run playbook with custom arguments
+# Run with custom arguments
 just run <extra-args>
 
-# Install a specific service
+# Install a single service
 just install-service <service-name>
-```
 
-### Service Management
+# Service management
+just start-all / just stop-all
+just start-group <group-name> / just stop-group <group-name>
 
-```bash
-just start-all
-just stop-all
-just start-group <group-name>
-just stop-group <group-name>
-```
-
-### User Management
-
-```bash
-# Register a new user (admin_yes_or_no: 'yes' or 'no')
+# Register a new user ('yes' or 'no' for admin)
 just register-user <username> <password> <admin_yes_or_no>
 ```
 
-### Development
-
-```bash
-# Run ansible-lint against custom roles
-just lint
-# or
-make lint
-```
-
-## Key Playbook Tags
-
-- `setup-all` — Runs all setup tasks (install + uninstall) but doesn't start services
-- `install-all` — Like `setup-all` but skips uninstallation tasks
-- `setup-SERVICE` / `install-SERVICE` — Per-service setup (e.g., `setup-synapse`, `install-mautrix-telegram`)
-- `start` / `stop` — Start/stop all services
-- `ensure-matrix-users-created` — Creates special users needed by bots/bridges
-
-**Note:** `just install-all` differs from raw `--tags=install-all` because just recipes also run `ensure-matrix-users-created` and `start` automatically.
+**Tag semantics:** `setup-all` runs install + uninstall tasks (ensures clean state); `install-all` skips uninstall tasks. `just install-all` additionally runs `ensure-matrix-users-created` and `start`.
 
 ## High-Level Architecture
 
 ### Project Structure
 
-- `setup.yml` — Main playbook orchestrating all role execution
-- `roles/custom/` — Matrix-specific roles maintained by this project (~80 roles for services, bridges, bots)
-- `roles/galaxy/` — External roles fetched via ansible-galaxy (gitignored)
-- `group_vars/matrix_servers` — Central wiring file connecting all roles with variable overrides
-- `inventory/hosts` — Target server definitions
-- `inventory/host_vars/<domain>/vars.yml` — Per-server configuration
+- `setup.yml` — Main playbook, lists all 80+ roles in execution order
+- `roles/custom/` — 80 Matrix-specific roles (services, bridges, bots, clients)
+- `roles/galaxy/` — External roles fetched via `ansible-galaxy` (gitignored)
+- `group_vars/matrix_servers` — Central wiring file (~6000 lines) connecting all roles
+- `inventory/` — **Git submodule** (`git@github.com:Novaloop-AG/matrix-docker-ansible-inventory.git`) containing host definitions and per-server config
+- `inventory/host_vars/matrix.healthchat.ch/vars.yml` — Server-specific overrides
 
-### Role Structure
+### Configuration Precedence
 
-Each role in `roles/custom/` follows this pattern:
-- `defaults/main.yml` — Default variables (service disabled by default)
-- `tasks/main.yml` — Tagged task blocks for setup/install/start/stop operations
-- `templates/` — Jinja2 templates for configs and systemd units
-- `vars/` — Internal variables
+`role defaults/main.yml` → `group_vars/matrix_servers` → `inventory/host_vars/<domain>/vars.yml`
 
 ### Variable Naming Convention
 
-- `matrix_<service>_enabled: true/false` — Enable/disable a service
-- `matrix_<service>_*` — Service-specific configuration
+- `matrix_<service>_enabled: true/false` — Enable/disable a service (disabled by default)
+- `matrix_<service>_docker_image` / `matrix_<service>_version` — Docker image config
+- `matrix_<service>_container_network` — Docker network assignment
+- `matrix_<service>_container_labels_traefik_*` — Traefik routing configuration
 - `matrix_domain` — Base domain for Matrix identity (e.g., `example.com`)
-- `matrix_server_fqn_matrix` — FQDN where services run (defaults to `matrix.{{ matrix_domain }}`)
+- `matrix_server_fqn_matrix` — FQDN where services run (default: `matrix.{{ matrix_domain }}`)
 - `matrix_homeserver_implementation` — Homeserver choice: `synapse`, `dendrite`, `conduit`, `conduwuit`, `continuwuity`
+- `matrix_base_data_path` — Root data directory (default: `/matrix`)
 
-### Configuration Flow
+### Role Task Pattern
 
-1. User defines `inventory/host_vars/<domain>/vars.yml` with their settings
-2. `group_vars/matrix_servers` wires together all roles and sets interdependencies
-3. Each role's defaults are overridden by group_vars and then host_vars
-4. Services are enabled explicitly via `matrix_<service>_enabled: true`
+Every custom role follows this structure in `tasks/main.yml`:
+
+```yaml
+# Block 1: Setup/Install (tagged setup-all, setup-<service>, install-all, install-<service>)
+- when: matrix_<service>_enabled | bool
+  # validate_config.yml → setup_install.yml
+
+# Block 2: Uninstall (same setup tags, but runs when DISABLED)
+- when: not matrix_<service>_enabled | bool
+  # setup_uninstall.yml — cleans up when service is turned off
+```
+
+Key pattern: uninstall tasks run under setup tags but with an inverted `when` condition, so disabling a service and running `setup-all` removes it cleanly.
+
+### group_vars Wiring Pattern
+
+`group_vars/matrix_servers` uses list/dict composition to wire services together:
+
+- **Homeserver registration mounts**: Each enabled bridge adds its `registration.yaml` as a bind mount into the homeserver container
+- **App service config files**: `matrix_homeserver_app_service_config_files_auto` is built by concatenating lists conditionally per bridge
+- **Variables follow `auto + custom` pattern**: e.g., `_auto` computed by playbook, `_custom` for user overrides, combined with `| combine()` or `+`
 
 ### Deployment Architecture
 
-- All services run in Docker containers with systemd unit files
+- All services run in Docker containers managed by systemd unit files
+- Docker networks: `matrix-homeserver`, `matrix-addons` (bridges/bots), `matrix-monitoring`, per-service networks
 - Traefik handles reverse proxying and SSL termination (Let's Encrypt)
-- Services communicate via Docker networks
-- Data persists in Docker volumes under `/matrix/`
-- Bridge/bot registrations are automatically mounted into homeserver containers
+- Data persists under `/matrix/` with `matrix:matrix` ownership
+- Bridge registrations are automatically bind-mounted into homeserver containers
 
-### Key Dependencies
+### Custom Addition: healthchat-workspace
 
-External roles from `requirements.yml` provide:
-- Docker installation (geerlingguy/ansible-role-docker)
-- PostgreSQL (mother-of-all-self-hosting/ansible-role-postgres)
-- Traefik reverse proxy
-- systemd service management
-- Various supporting services (Grafana, Prometheus, Valkey, etc.)
+`roles/custom/healthchat-workspace/` deploys a custom Docker app from `ghcr.io` (Novaloop-AG/healthchat-workspace) with optional private registry auth, Traefik labels, and systemd management. Disabled by default.
+
+### Pre-commit Hooks
+
+Pre-push hooks are configured (`.pre-commit-config.yaml`): large file check, trailing whitespace, end-of-file fixer, codespell, REUSE compliance. A Nix flake (`.envrc` / `flake.nix`) provides the dev environment.
+
+### Ansible-lint Configuration
+
+Skipped rules (`.config/ansible-lint.yml`): `unnamed-task`, `no-handler`, `no-jinja-nesting`, `schema`, `command-instead-of-shell`, `role-name`, `var-naming[no-role-prefix]`, `template-instead-of-copy`. Runs in offline mode.
