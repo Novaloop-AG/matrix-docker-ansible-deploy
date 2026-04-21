@@ -20,5 +20,3 @@
     healthchat_workspace_docker_registry_enabled | bool and
     (healthchat_workspace_docker_registry_username == '' or
      healthchat_workspace_docker_registry_password == '')
-
-

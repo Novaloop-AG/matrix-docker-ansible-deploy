@@ -64,7 +64,7 @@ healthchat_workspace_container_labels_traefik_rule: "Host(`{{ healthchat_workspa
 healthchat_workspace_container_labels_traefik_priority: 0
 healthchat_workspace_container_labels_traefik_entrypoints: web-secure
 healthchat_workspace_container_labels_traefik_tls: "{{ healthchat_workspace_container_labels_traefik_entrypoints != 'web' }}"
-healthchat_workspace_container_labels_traefik_tls_certResolver: default
+healthchat_workspace_container_labels_traefik_tls_cert_resolver: default
 
 # Compression middleware
 healthchat_workspace_container_labels_traefik_compression_middleware_enabled: false
@@ -72,7 +72,7 @@ healthchat_workspace_container_labels_traefik_compression_middleware_name: ""
 
 # HTTP headers configuration
 healthchat_workspace_http_header_xss_protection: "1; mode=block"
-healthchat_workspace_http_header_frame_options: ALLOWALL # To be embedded in matrix clients
+healthchat_workspace_http_header_frame_options: ALLOWALL  # To be embedded in matrix clients
 healthchat_workspace_http_header_content_type_options: nosniff
 healthchat_workspace_http_header_content_security_policy: ""
 healthchat_workspace_http_header_content_permission_policy: "interest-cohort=()"
