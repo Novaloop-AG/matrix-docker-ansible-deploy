@@ -1,0 +1,120 @@
+# SPDX-FileCopyrightText: 2026 Novaloop AG
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+---
+name: Deploy Matrix
+
+on:  # yamllint disable-line rule:truthy
+  workflow_dispatch:
+    inputs:
+      command:
+        description: "Just command (e.g. setup-all, install-all, start-all, 'run-tags install-all,start')"
+        required: false
+        default: "setup-all"
+      extra_args:
+        description: "Extra args passed through to ansible-playbook (e.g. --limit, -e key=val)"
+        required: false
+        default: ""
+      check_mode:
+        description: "Dry-run (appends --check --diff)"
+        required: false
+        type: boolean
+        default: false
+      verbosity:
+        description: "Ansible verbosity"
+        required: false
+        type: choice
+        default: "-v"
+        options:
+          - ""
+          - "-v"
+          - "-vv"
+          - "-vvv"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-matrix-healthchat
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to matrix.healthchat.ch
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout (without submodules)
+        uses: actions/checkout@v6
+        with:
+          submodules: false
+
+      - name: Load SSH keys into ssh-agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: |
+            ${{ secrets.INVENTORY_DEPLOY_KEY }}
+            ${{ secrets.TARGET_SSH_KEY }}
+
+      - name: Configure known_hosts
+        env:
+          PINNED_KNOWN_HOSTS: ${{ secrets.TARGET_SSH_KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          if [ -n "$PINNED_KNOWN_HOSTS" ]; then
+            printf '%s\n' "$PINNED_KNOWN_HOSTS" >> ~/.ssh/known_hosts
+          else
+            ssh-keyscan -t ed25519,rsa matrix.healthchat.ch >> ~/.ssh/known_hosts
+          fi
+          ssh-keyscan -t ed25519,rsa github.com >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Fetch inventory submodule
+        run: git submodule update --init --recursive inventory
+
+      - name: Install git-crypt + openssh-client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git-crypt openssh-client
+
+      - name: Install just
+        uses: taiki-e/install-action@v2
+        with:
+          tool: just
+
+      - name: Install ansible-core
+        run: pipx install --include-deps 'ansible-core==2.17.*'
+
+      - name: Decrypt inventory with git-crypt
+        env:
+          GIT_CRYPT_KEY_B64: ${{ secrets.GIT_CRYPT_KEY_B64 }}
+        run: |
+          echo "$GIT_CRYPT_KEY_B64" | base64 -d > /tmp/gc.key
+          (cd inventory && git-crypt unlock /tmp/gc.key)
+          shred -u /tmp/gc.key
+          if head -c 9 inventory/host_vars/matrix.healthchat.ch/vars.yml | grep -q GITCRYPT; then
+            echo "::error::git-crypt unlock did not decrypt vars.yml"
+            exit 1
+          fi
+
+      - name: Install Ansible roles
+        run: just roles
+
+      - name: Run just ${{ inputs.command }}
+        env:
+          ANSIBLE_FORCE_COLOR: "True"
+          COMMAND: ${{ inputs.command }}
+          VERBOSITY: ${{ inputs.verbosity }}
+          EXTRA_ARGS: ${{ inputs.extra_args }}
+          CHECK_MODE: ${{ inputs.check_mode }}
+        run: |
+          CHECK=""
+          if [ "$CHECK_MODE" = "true" ]; then
+            CHECK="--check --diff"
+          fi
+          just $COMMAND $VERBOSITY $CHECK $EXTRA_ARGS
+
+      - name: Cleanup
+        if: always()
+        run: rm -f /tmp/gc.key || true
