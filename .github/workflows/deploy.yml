@@ -56,6 +56,7 @@ jobs:
           ssh-private-key: |
             ${{ secrets.INVENTORY_DEPLOY_KEY }}
             ${{ secrets.TARGET_SSH_KEY }}
+            ${{ secrets.ELEMENT_THEMES_DEPLOY_KEY }}
 
       - name: Configure known_hosts
         env:
