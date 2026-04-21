@@ -9,28 +9,28 @@ This is a fork/customization of [matrix-docker-ansible-deploy](https://github.co
 ## Common Development Commands
 
 ```bash
-# Lint custom roles
-just lint                    # or: make lint
+# Lint
+just lint                    # ansible-lint across all roles (including galaxy)
+make lint                    # ansible-lint roles/custom only — faster for iterating on custom roles
 
-# Update playbook + install/update Ansible roles
+# Update playbook + install/update Ansible roles (pinned versions in requirements.yml)
 just update
+just update -u               # also bumps pinned versions in requirements.yml
 
-# Install roles only (without git pull)
+# Install/update roles only (no git pull of the playbook)
 just roles
 
 # Run full installation (install + create users + start)
 just install-all
 
-# Setup services without starting them
+# Setup services without starting them (install + uninstall, for clean state)
 just setup-all
 
-# Run playbook with specific tags
-just run-tags <comma-separated-tags>
-
-# Run with custom arguments
+# Run playbook with specific tags / extra args
+just run-tags <comma-separated-tags> [extra-args]
 just run <extra-args>
 
-# Install a single service
+# Install a single service (uses install-<service> + start-group tags)
 just install-service <service-name>
 
 # Service management
@@ -39,9 +39,16 @@ just start-group <group-name> / just stop-group <group-name>
 
 # Register a new user ('yes' or 'no' for admin)
 just register-user <username> <password> <admin_yes_or_no>
+
+# Regenerate mautrix-meta-instagram role from mautrix-meta-messenger source
+just rebuild-mautrix-meta-instagram
 ```
 
-**Tag semantics:** `setup-all` runs install + uninstall tasks (ensures clean state); `install-all` skips uninstall tasks. `just install-all` additionally runs `ensure-matrix-users-created` and `start`.
+**Tag semantics:** `setup-all` runs install + uninstall tasks (ensures clean state); `install-all` skips uninstall tasks. `just install-all` and `just setup-all` additionally run `ensure-matrix-users-created` and `start`.
+
+**Role installer:** If [`agru`](https://github.com/etkecc/agru) is installed it is used (fast, parallel); otherwise falls back to `ansible-galaxy install`. `just update` will log which one it used.
+
+**Single deploy target:** `inventory/hosts` contains one host — `matrix.healthchat.ch`. There is no staging server; changes land directly on production.
 
 ## High-Level Architecture
 
@@ -51,8 +58,9 @@ just register-user <username> <password> <admin_yes_or_no>
 - `roles/custom/` — 80 Matrix-specific roles (services, bridges, bots, clients)
 - `roles/galaxy/` — External roles fetched via `ansible-galaxy` (gitignored)
 - `group_vars/matrix_servers` — Central wiring file (~6000 lines) connecting all roles
-- `inventory/` — **Git submodule** (`git@github.com:Novaloop-AG/matrix-docker-ansible-inventory.git`) containing host definitions and per-server config
-- `inventory/host_vars/matrix.healthchat.ch/vars.yml` — Server-specific overrides
+- `inventory/` — **Git submodule** (`git@github.com:Novaloop-AG/matrix-docker-ansible-inventory.git`) containing host definitions and per-server config. Run `git submodule update --init` after a fresh clone; the working copy of the submodule is frequently modified but should be committed/pushed from inside `inventory/` separately.
+- `inventory/host_vars/matrix.healthchat.ch/vars.yml` — Server-specific overrides (passwords, enabled services, custom config)
+- `bin/` — Helper scripts (`ansible-all-hosts.sh`, `rebuild-mautrix-meta-instagram.sh`)
 
 ### Configuration Precedence
 
