@@ -42,7 +42,7 @@ traefik.http.routers.healthchat-workspace.middlewares={{ middlewares | join(',')
 traefik.http.routers.healthchat-workspace.entrypoints={{ healthchat_workspace_container_labels_traefik_entrypoints }}
 traefik.http.routers.healthchat-workspace.tls={{ healthchat_workspace_container_labels_traefik_tls | to_json }}
 {% if healthchat_workspace_container_labels_traefik_tls %}
-traefik.http.routers.healthchat-workspace.tls.certResolver={{ healthchat_workspace_container_labels_traefik_tls_certResolver }}
+traefik.http.routers.healthchat-workspace.tls.certResolver={{ healthchat_workspace_container_labels_traefik_tls_cert_resolver }}
 {% endif %}
 
 {% endif %}
