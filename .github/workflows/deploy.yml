@@ -83,8 +83,10 @@ jobs:
         with:
           tool: just
 
-      - name: Install ansible-core
-        run: pipx install --include-deps 'ansible-core==2.17.*'
+      - name: Install ansible-core + passlib
+        run: |
+          pipx install --include-deps 'ansible-core==2.17.*'
+          pipx inject ansible-core passlib
 
       - name: Decrypt inventory with git-crypt
         env:
