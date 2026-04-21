@@ -18,6 +18,7 @@ path = [
     ".envrc",
     ".gitattributes",
     ".gitignore",
+    ".gitmodules",
     ".pre-commit-config.yaml",
     ".yamllint",
     "ansible.cfg",
@@ -36,4 +37,13 @@ path = [
 ]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2024 - 2025 Slavi Pantaleev, MDAD project contributors"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
+
+# Novaloop additions (custom role + repo-specific docs; not upstreamed)
+[[annotations]]
+path = [
+    "CLAUDE.md",
+    "roles/custom/healthchat-workspace/**",
+]
+SPDX-FileCopyrightText = "2024 - 2026 Novaloop AG"
 SPDX-License-Identifier = "AGPL-3.0-or-later"
