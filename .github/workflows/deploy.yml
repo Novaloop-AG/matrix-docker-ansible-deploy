@@ -18,6 +18,7 @@ on:  # yamllint disable-line rule:truthy
           - install-all
           - start-all
           - install-service healthchat-workspace
+          - install-service client-element
       extra_args:
         description: "Extra args passed through to ansible-playbook (e.g. --limit, -e key=val)"
         required: false
