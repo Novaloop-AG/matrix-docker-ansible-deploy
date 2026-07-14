@@ -9,9 +9,15 @@ on:  # yamllint disable-line rule:truthy
   workflow_dispatch:
     inputs:
       command:
-        description: "Just command (e.g. setup-all, install-all, start-all, 'run-tags install-all,start')"
+        description: "What to deploy"
         required: false
+        type: choice
         default: "setup-all"
+        options:
+          - setup-all
+          - install-all
+          - start-all
+          - install-service healthchat-workspace
       extra_args:
         description: "Extra args passed through to ansible-playbook (e.g. --limit, -e key=val)"
         required: false
