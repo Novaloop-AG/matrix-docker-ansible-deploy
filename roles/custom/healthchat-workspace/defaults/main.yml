@@ -5,8 +5,11 @@
 healthchat_workspace_enabled: false
 
 # Docker image configuration
+# The image is pulled with `pull: always` on every run, so a moving tag
+# (`:latest`) is re-fetched and the service restarted when the digest changes.
+# There is deliberately no `_force_pull` variable — the community.docker.docker_image_pull
+# module handles this natively, matching how the stock roles do it.
 healthchat_workspace_docker_image: "ghcr.io/novaloop-ag/healthchat-workspace:latest"
-healthchat_workspace_docker_image_force_pull: "{{ healthchat_workspace_docker_image.endswith(':latest') }}"
 
 # Docker registry authentication
 # Set to true to enable Docker registry authentication for private repositories

@@ -21,6 +21,18 @@
   when: healthchat_workspace_docker_registry_enabled | bool
   no_log: true
 
+# Must run after the registry login above — the image lives in a private registry.
+# `pull: always` means a moving tag (`:latest`) is re-checked against the registry on
+# every deploy, and reports `changed` only when the digest actually moved.
+- name: Ensure healthchat-workspace Docker image is pulled
+  community.docker.docker_image_pull:
+    name: "{{ healthchat_workspace_docker_image }}"
+    pull: always
+  register: healthchat_workspace_docker_image_pull_result
+  retries: "{{ devture_playbook_help_container_retries_count }}"
+  delay: "{{ devture_playbook_help_container_retries_delay }}"
+  until: healthchat_workspace_docker_image_pull_result is not failed
+
 - name: Ensure healthchat-workspace Docker Compose file installed
   ansible.builtin.copy:
     content: "{{ healthchat_workspace_docker_compose_file_content }}"
@@ -37,6 +49,7 @@
     mode: 0644
     owner: "{{ matrix_user_name }}"
     group: "{{ matrix_group_name }}"
+  register: healthchat_workspace_env_result
 
 - name: Ensure healthchat-workspace labels file installed
   ansible.builtin.template:
@@ -45,6 +58,7 @@
     mode: 0644
     owner: "{{ matrix_user_name }}"
     group: "{{ matrix_group_name }}"
+  register: healthchat_workspace_labels_result
 
 - name: Ensure healthchat-workspace container network is created
   community.general.docker_network:
@@ -58,10 +72,16 @@
     src: "{{ role_path }}/templates/systemd/healthchat-workspace.service.j2"
     dest: "{{ devture_systemd_docker_base_systemd_path }}/healthchat-workspace.service"
     mode: 0644
+  register: healthchat_workspace_systemd_service_result
 
-- name: Ensure healthchat-workspace.service is restarted if compose file changed
+- name: Ensure healthchat-workspace.service is restarted if anything changed
   ansible.builtin.service:
     name: healthchat-workspace.service
     state: restarted
     daemon_reload: true
-  when: healthchat_workspace_docker_compose_result.changed
+  when: >-
+    healthchat_workspace_docker_compose_result.changed
+    or healthchat_workspace_docker_image_pull_result.changed
+    or healthchat_workspace_env_result.changed
+    or healthchat_workspace_labels_result.changed
+    or healthchat_workspace_systemd_service_result.changed
